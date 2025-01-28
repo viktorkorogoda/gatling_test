@@ -1,8 +1,9 @@
 package computerdatabase;
 
 import static io.gatling.javaapi.core.CoreDsl.StringBody;
-import static io.gatling.javaapi.core.CoreDsl.constantUsersPerSec;
+import static io.gatling.javaapi.core.CoreDsl.exec;
 import static io.gatling.javaapi.core.CoreDsl.scenario;
+import static io.gatling.javaapi.core.OpenInjectionStep.atOnceUsers;
 import static io.gatling.javaapi.http.HttpDsl.http;
 import static io.gatling.javaapi.http.HttpDsl.status;
 
@@ -29,18 +30,21 @@ public class PostRequestSimulation extends Simulation {
 
     // Define the scenario
     private final ScenarioBuilder scn = scenario("PostRequestSimulation")
-            .exec(
-                    http("Send POST Request")
-                            .post("/accept") // Replace with your endpoint
-                            .body(StringBody(requestBody)) // Attach the JSON body
-                            .check(status().is(200)) // Validate the response status
+            .repeat(200)
+            .on(exec(
+                        http("Send POST Request")
+                                .post("/accept") // Replace with your endpoint
+                                .body(StringBody(requestBody)) // Attach the JSON body
+                                .check(status().is(200)) // Validate the response status
+
+                )
             )
-            .pause(Duration.ofMillis(20), Duration.ofMillis(100)); // 100ms pause between requests
+            .pause(Duration.ofMillis(20), Duration.ofMillis(100)); // 20-100ms pause between requests
 
     {
         setUp(
                 scn.injectOpen(
-                        constantUsersPerSec(1000.0/60).during(10) // 1000 requests per minute
+                        atOnceUsers(5) // 5 threads
                 )
         ).protocols(httpProtocol);
     }
